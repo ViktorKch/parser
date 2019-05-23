@@ -1,0 +1,47 @@
+import requests
+from bs4 import BeautifulSoup as bs
+import csv
+
+headers = {'accept': '*/*', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36'}
+
+base_url = 'http://www.tlock.ru'
+d = {}
+result = []
+
+
+def get_html(url):
+    session = requests.Session()
+    request = session.get(url, headers=headers)
+    return request
+
+def lock_parser(base_url, headers):
+    request = get_html(base_url)
+    if request.status_code == 200:
+        soup = bs(request.content, 'html.parser')
+        links = soup.find_all('a', class_='cat__txt')
+        for link in links:
+            category_link = base_url + link['href']
+            category_name = get_html(category_link)
+            category_soup = bs(category_name.content, 'html.parser')
+            names = category_soup.find_all('div', class_='good__txt-i')
+            for name in names:
+                category = name.contents[0].strip().capitalize()
+                d['Подкатегория'] = category
+
+                result.append(d.copy())
+
+    print(result)
+    return result
+
+def category_writer(d):
+    with open('categories.csv', 'a') as file:
+        a_pen = csv.writer(file)
+        a_pen.writerow(('Подкатегория'))
+        for d1 in d:
+            try:
+                a_pen.writerow((d1['Подкатегория']))
+            except:
+                pass
+
+categories = lock_parser(base_url, headers)
+category_writer(categories)
